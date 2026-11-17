@@ -5,7 +5,7 @@ use std::io::{Cursor, Read, Seek};
 use quick_xml::events::Event;
 use zip::ZipArchive;
 
-use super::{MAX_DECOMPRESSED_BYTES, unreadable};
+use super::{unreadable, MAX_DECOMPRESSED_BYTES};
 use crate::documents::error::Result;
 
 /// The body text of a Word document.
@@ -28,6 +28,8 @@ pub(super) fn pptx(bytes: &[u8]) -> Result<String> {
     let mut slides: Vec<(u32, String)> = archive
         .file_names()
         .filter_map(|name| {
+            // An entry whose name zip cannot decode is not a slide we know.
+            let name = name.ok()?;
             let number = name.strip_prefix(PREFIX)?.strip_suffix(".xml")?;
             Some((number.parse().ok()?, name.to_string()))
         })
